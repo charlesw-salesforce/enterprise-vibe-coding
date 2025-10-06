@@ -52,7 +52,6 @@ Always use API version 65.0.
 ### 5. Previewing the App
 
 - Await instruction from the user before attempting to open the app in local dev mode
-- You can find the current metadata alias in current-org.txt
 - If the user asks to preview the app or run it in local dev mode, run this terminal command:
 
 `sf lightning dev app --target-org "$ALIAS" --name="Todo Manager" --device-type desktop`
@@ -64,26 +63,22 @@ Always use API version 65.0.
 
 ### 6. Previewing individual Lightning Web Components
 
-- If the user asks to preview a Lightning web component, run this terminal command:
+- If the user asks to preview a Lightning web component, do the following two steps:
+
+1. Deploy the component metadata to their default org using the `sf-deploy-metadata` tool
+2. Run the Component Preview terminal command:
 
 `sf lightning dev component --target-org "$ALIAS" --name="$COMPONENT_NAME"`
 
+You **must** deploy the metadata before running the `sf lightning dev component` command.
+
 **Creating components that work in Lightning Dev mode requires special considerations:**
-
-- **Avoid Lightning Base Components with Module Dependencies**: Components like `lightning-card`, `lightning-button-icon`, and others that require module imports may not work in local dev mode. Use basic HTML with SLDS classes instead.
-
-- **Use SLDS Classes Directly**: Replace Lightning base components with equivalent SLDS markup:
-  - Instead of `<lightning-card>`, use `<div class="slds-card">`
-  - Instead of `<lightning-button>`, use `<button class="slds-button">`
-  - Apply SLDS utility classes for spacing: `slds-m-around_medium`, `slds-p-horizontal_small`
 
 - **Avoid External Asset References**: Don't reference Salesforce standard assets like `/assets/icons/standard-sprite/svg/symbols.svg` as they're not available in local dev mode.
 
 - **Keep Component Structure Simple**: Focus on core functionality and basic styling. Complex Lightning base components often have dependencies that aren't resolved locally.
 
 - **Handle Port Conflicts**: If port 3000 is in use, kill existing processes with `lsof -ti:3000 | xargs kill -9` before starting dev mode.
-
-- **Test in Both Environments**: Components working in dev mode should also be tested when deployed to ensure compatibility in both local and org environments.
 
 ---
 
@@ -98,6 +93,7 @@ Always use API version 65.0.
 
 - If you run into issues running `sf lightning` commands, install the latest version of the plugin with `sf plugins install @salesforce/plugin-lightning-dev@latest`
 - **Wait** to deploy the metadata and preview the app until specifically instructed.
+- You **must** deploy the appropriate LWC metadata before previewing it using the `sf lightning dev` commands
 
 ### General Prohibited Actions
 
