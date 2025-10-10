@@ -47,10 +47,6 @@ force-app/main/default/
 
 The Todo\_\_c object is already created with the following fields:
 
-### Standard Fields
-
-- **Name**: Auto-number field with format "TODO-{0000}"
-
 ### Custom Fields
 
 - **Description\_\_c**: Text Area field for todo item details
@@ -97,16 +93,27 @@ The Apex controller should be implemented with these specifications:
    - All methods must include clear JavaDoc comments
 
 2. **Required Methods**:
-   - Method(s) to retrieve todo records from the database
-   - Method(s) to create new todo records
-   - Method(s) to update existing todo records
-   - Method(s) to delete todo records
+   - `getTodos()`: Retrieve all Todo records with comprehensive field selection and sorting
+   - `createTodo(Todo__c todo)`: Create new todo records with default value handling
+   - `updateTodo(Todo__c todo)`: Update existing todo records
+   - `deleteTodo(Id todoId)`: Delete todo records with proper error handling
+   - `getPriorityPicklistValues()`: Get active picklist values for Priority field
+   - `getStatusPicklistValues()`: Get active picklist values for Status field
    - Any methods used with `@wire` must include `@AuraEnabled(cacheable=true)`
 
-3. **Best Practices**:
+3. **Implementation Details**:
+   - Use `Database.insert()`, `Database.update()`, and `Database.delete()` with `false` parameter for partial success handling
+   - Implement comprehensive SOQL queries selecting all relevant fields including system fields
+   - Use proper sorting: `ORDER BY Due_Date__c ASC NULLS LAST, Priority__c DESC, CreatedDate DESC`
+   - Set default values for Status ('Not Started') and Priority ('Medium') when creating records
+   - Use Schema.DescribeFieldResult to dynamically retrieve picklist values
+   - Return full record objects after create/update operations for immediate UI updates
+
+4. **Best Practices**:
    - Implement proper error handling with try/catch blocks
-   - Use SOQL queries with dynamic sorting where applicable
+   - Use Database operations with partial success handling
    - Throw AuraHandledException for user-friendly error messages
+   - Aggregate multiple database errors into single exception messages
    - Do NOT use hardcoded IDs
    - Do NOT use System.debug() statements
 
@@ -126,22 +133,30 @@ The LWC component should be implemented with these specifications:
    - Use `refreshApex` for refreshing data after modifications
    - Initialize arrays as empty `[]` in error/undefined cases to prevent template rendering failures
    - Use `lightning-formatted-date-time` for date formatting
+   - Import all necessary modules: `track`, `wire`, `ShowToastEvent`, `refreshApex`
 
-3. **Functional Requirements**:
-   - Form for creating new todos (Description, Due Date, Priority)
-   - List view of existing todos with all field data
-   - Sorting and filtering capabilities
-   - Edit functionality for existing todos
-   - Delete functionality with confirmation
-   - Status update capability (mark as complete/incomplete)
-   - Proper loading states and error handling
-   - Toast notifications for user feedback
+3. **Component Architecture**:
+   - Use `@track` decorator for reactive properties that need to trigger re-renders
+   - Implement comprehensive state management for loading states and form data
+   - Use appropriate Lightning components for displaying todos
+   - Implement proper data handling and user interactions
+   - Use appropriate input components for form fields
 
-4. **UI Guidelines**:
-   - Use Salesforce Lightning Design System (SLDS)
-   - Implement responsive design
-   - Use appropriate Lightning base components
-   - Follow accessibility best practices
+4. **Functional Requirements**:
+   - **Data Display**: Show todos with all field data
+   - **CRUD Operations**: Create, read, update, delete todos with proper validation
+   - **User Feedback**: Success and error messages for all operations
+   - **Loading States**: Appropriate loading indicators during async operations
+
+5. **Event Handling**:
+   - Implement proper event handling for user interactions
+   - Use proper event delegation and data binding
+   - Handle form validation appropriately
+
+6. **Styling and UX**:
+   - Use Salesforce Lightning Design System (SLDS) classes
+   - Implement responsive design principles
+   - Use appropriate Lightning icons and components
 
 ## Development Guidelines
 
@@ -153,11 +168,13 @@ The LWC component should be implemented with these specifications:
    - Use proper exception handling patterns
 
 2. **LWC Development**:
-   - Import necessary modules (wire, track, refreshApex, etc.)
-   - Structure component with clear separation of concerns
-   - Use modern JavaScript ES6+ features
+   - Import necessary modules (wire, track, refreshApex, ShowToastEvent, etc.)
+   - Structure component with clear separation of concerns and proper state management
+   - Use modern JavaScript ES6+ features including destructuring and arrow functions
    - Follow LWC best practices for event handling and data management
-   - Implement proper lifecycle management
+   - Implement proper lifecycle management and error handling
+   - Implement comprehensive form validation and user feedback mechanisms
+   - Implement responsive design with SLDS grid system and utility classes
 
 ## Deployment Process
 
@@ -195,5 +212,6 @@ After deployment:
 3. **Data Model**:
    - The Todo\_\_c object supports all standard Salesforce features (reports, workflows, etc.)
    - Custom fields are properly configured for UI interaction
+
 
 This document provides all the necessary context for an AI agent to implement the TodoController.cls Apex class and the todoManager Lightning Web Component without requiring access to each individual file in the project.
