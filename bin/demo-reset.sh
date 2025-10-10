@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 PERMISSION_SET="Todo_Manager_Full_Access"
-CREATE_TIMEOUT=5  # seconds
+CREATE_TIMEOUT=45  # seconds
 SCRATCH_DEF="config/project-scratch-def.json"
 
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
