@@ -12,7 +12,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 PERMISSION_SET="Todo_Manager_Full_Access"
-CREATE_TIMEOUT=60  # seconds
+CREATE_TIMEOUT=5  # seconds
 SCRATCH_DEF="config/project-scratch-def.json"
 
 print_status() { echo -e "${BLUE}[INFO]${NC} $1"; }
@@ -32,7 +32,7 @@ current_org=$(get_current_org)
 if [ "$current_org" != "none" ] && [ -n "$current_org" ]; then
     print_status "Found current org: $current_org"
     print_status "Clearing current org (not deleting - shared org pool)"
-    sf config unset target-org 2>/dev/null || true
+    sf org logout --target-org $current_org --no-prompt 2>/dev/null || true
 else
     print_status "No current org found to clear"
 fi
@@ -43,91 +43,102 @@ git checkout -- force-app/
 git clean -fd force-app
 print_success "Git repository reset complete"
 
-# Get available pre-authenticated orgs from CLI
+# Get available pre-authenticated orgs from CLI (exclude JIT orgs)
 get_available_orgs() {
     sf org list --json | jq -r '
-        (.result.scratchOrgs[]? // empty | select(type == "object") | select(.isExpired == false and .alias != null) | .alias),
-        (.result.nonScratchOrgs[]? // empty | select(type == "object") | select(.instanceUrl != null and (.instanceUrl | contains(".scratch.my.salesforce.com")) and .alias != null) | .alias),
-        (.result.other[]? // empty | select(type == "object") | select(.instanceUrl != null and (.instanceUrl | contains(".scratch.my.salesforce.com")) and .alias != null) | .alias)
+        (.result.scratchOrgs[]? // empty | select(type == "object") | select(.isExpired == false and .alias != null and (.alias | test("^jit-") | not)) | .alias),
+        (.result.nonScratchOrgs[]? // empty | select(type == "object") | select(.instanceUrl != null and (.instanceUrl | contains(".scratch.my.salesforce.com")) and .alias != null and (.alias | test("^jit-") | not)) | .alias),
+        (.result.other[]? // empty | select(type == "object") | select(.instanceUrl != null and (.instanceUrl | contains(".scratch.my.salesforce.com")) and .alias != null and (.alias | test("^jit-") | not)) | .alias)
     ' 2>/dev/null | sort -u || true
 }
 
-# Try to create a scratch org JIT with timeout (macOS compatible)
-try_create_scratch_org() {
-    local alias="jit-org-$$-$(date +%s)"
-    local templog=$(mktemp)
-    
-    # Send all progress output to stderr to keep stdout clean for return value
-    echo "" >&2
-    print_status "🚀 Attempting Just-In-Time scratch org creation..." >&2
-    print_status "Timeout: ${CREATE_TIMEOUT} seconds" >&2
-    print_status "Scratch Def: ${SCRATCH_DEF}" >&2
-    
-    # Check if config file exists
-    if [ ! -f "$SCRATCH_DEF" ]; then
-        print_error "Scratch org definition file not found: $SCRATCH_DEF" >&2
-        return 1
-    fi
-    
-    echo "" >&2
-    
-    # Run org creation in background
-    sf org create scratch \
-        --definition-file "$SCRATCH_DEF" \
-        --alias "$alias" \
-        --duration-days 1 \
-        --set-default \
-        --json > "$templog" 2>&1 &
-    
-    local pid=$!
-    
-    # Wait for completion or timeout with progress dots
-    local count=0
-    printf "⏳ Waiting: " >&2
-    while [ $count -lt $CREATE_TIMEOUT ]; do
-        if ! ps -p $pid > /dev/null 2>&1; then
-            # Process finished
-            wait $pid
-            local exit_code=$?
-            
-            echo "" >&2  # New line after dots
-            
-            if [ $exit_code -eq 0 ]; then
-                # Success! The org was created with the alias we specified
-                print_success "✅ JIT org created in ${count}s: $alias" >&2
-                rm -f "$templog"
-                echo "$alias"  # Output alias to stdout for capture
-                return 0
-            fi
-            
-            # Failed
-            print_warning "⚠️  JIT creation failed after ${count}s (exit code: $exit_code)" >&2
-            print_status "Error output:" >&2
-            cat "$templog" >&2
-            rm -f "$templog"
+    # Try to create a scratch org JIT with timeout and progress indicators
+    try_create_scratch_org() {
+        local alias="jit-org-$$-$(date +%s)"
+        local templog=$(mktemp)
+        
+        echo "" >&2
+        print_status "🚀 Attempting Just-In-Time scratch org creation..." >&2
+        print_status "Timeout: ${CREATE_TIMEOUT} seconds" >&2
+        print_status "Scratch Def: ${SCRATCH_DEF}" >&2
+        
+        # Check if config file exists
+        if [ ! -f "$SCRATCH_DEF" ]; then
+            print_error "Scratch org definition file not found: $SCRATCH_DEF" >&2
             return 1
         fi
         
-        # Show progress every 5 seconds
-        if [ $((count % 5)) -eq 0 ] && [ $count -gt 0 ]; then
-            printf "${count}s " >&2
+        echo "" >&2
+        
+        # Run org creation in background (don't set as default yet)
+        sf org create scratch \
+            --definition-file "$SCRATCH_DEF" \
+            --alias "$alias" \
+            --duration-days 1 \
+            --json > "$templog" 2>&1 &
+        
+        local pid=$!
+        
+        # Wait for completion or timeout with progress dots
+        local count=0
+        printf "⏳ Waiting: " >&2
+        while [ $count -lt $CREATE_TIMEOUT ]; do
+            if ! ps -p $pid > /dev/null 2>&1; then
+                # Process finished
+                wait $pid
+                local exit_code=$?
+                
+                echo "" >&2  # New line after dots
+                
+                if [ $exit_code -eq 0 ]; then
+                    # Success! The org was created with the alias we specified
+                    print_success "✅ JIT org created in ${count}s: $alias" >&2
+                    # Set as default org only now that we know it succeeded
+                    sf config set target-org="$alias" >/dev/null 2>&1
+                    rm -f "$templog"
+                    echo "$alias"  # Output alias to stdout for capture
+                    return 0
+                fi
+                
+                # Failed
+                print_warning "⚠️  JIT creation failed after ${count}s (exit code: $exit_code)" >&2
+                print_status "Error output:" >&2
+                cat "$templog" >&2
+                rm -f "$templog"
+                return 1
+            fi
+            
+            # Show progress every 5 seconds
+            if [ $((count % 5)) -eq 0 ] && [ $count -gt 0 ]; then
+                printf "${count}s " >&2
+            fi
+            
+            sleep 1
+            count=$((count + 1))
+        done
+        
+        # Timeout reached - kill the process
+        echo "" >&2  # New line after dots
+        print_warning "⏱️  Timeout reached! JIT creation took longer than ${CREATE_TIMEOUT}s" >&2
+        print_status "Terminating scratch org creation process..." >&2
+        kill $pid 2>/dev/null
+        sleep 2
+        kill -9 $pid 2>/dev/null
+        wait $pid 2>/dev/null
+        
+        # Clean up any partially created org with this alias
+        print_status "Cleaning up any partially created org: $alias" >&2
+        # Check if the org exists before trying to delete it
+        if sf org display --target-org "$alias" --json >/dev/null 2>&1; then
+            print_status "Found partially created org, deleting..." >&2
+            sf org delete scratch --target-org "$alias" --no-prompt 2>/dev/null || true
+        else
+            print_status "No org found to clean up (creation was interrupted early)" >&2
         fi
         
-        sleep 1
-        count=$((count + 1))
-    done
-    
-    # Timeout reached - kill the process
-    echo "" >&2  # New line after dots
-    print_warning "⏱️  Timeout reached! JIT creation took longer than ${CREATE_TIMEOUT}s" >&2
-    print_status "Terminating scratch org creation process..." >&2
-    kill $pid 2>/dev/null
-    sleep 2
-    kill -9 $pid 2>/dev/null
-    wait $pid 2>/dev/null
-    rm -f "$templog"
-    return 1
-}
+        rm -f "$templog"
+        return 1
+    }
 
 # Try JIT creation first
 next_org=""
@@ -198,6 +209,8 @@ echo "   1. Open the Agentforce Vibes extension"
 echo "   2. Close all open files"
 echo "   3. Open the Chrome browser to the activity instructions (bookmarked)"
 echo ""
+
+sf config set target-org=$next_org
 
 # Show remaining count (only for fallback orgs)
 if [ "$use_fallback" = true ]; then
