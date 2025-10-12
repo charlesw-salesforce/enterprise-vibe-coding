@@ -37,23 +37,22 @@
 - Use `lightning-formatted-date-time` to show formatted dates.
 - Do not put expressions in data-bindings in the HTML template.
 - Import all necessary modules: `track`, `wire`, `ShowToastEvent`, `refreshApex`.
-- Use `@track` decorator for reactive properties that need to trigger re-renders.
 - Implement comprehensive state management for loading states and form data
 - Implement proper form validation and user feedback mechanisms
 - Implement responsive design with SLDS grid system and utility classes
 - Use proper event delegation and error handling for all async operations.
+- You do not need `@track` decorator for reactive properties that need to trigger re-renders.
 
 ---
 
 ### 4. Deployment Process
 
 - Deploy files using the `sf-deploy-metadata` tool.
-- The `sourceDir` parameter must include the paths for `objects`, `classes`, and `lwc`. For example:
+- The `sourceDir` parameter must include the paths for `objects` and `lwc`. For example:
 - You can find the current metadata alias in current-org.txt.
   ```json
   {
     "sourceDir": [
-      "force-app/main/default/objects",
       "force-app/main/default/classes",
       "force-app/main/default/lwc"
     ],
@@ -64,26 +63,7 @@
 
 ---
 
-### 5. Previewing individual Lightning Web Components
-
-- If the user asks to preview a Lightning web component, do the following two steps:
-
-1. Deploy the component metadata to their default org using the `sf-deploy-metadata` tool
-2. Run the Component Preview terminal command:
-
-`sf lightning dev component --target-org "$ALIAS" --name="$COMPONENT_NAME"`
-
-You **must** deploy the metadata before running the `sf lightning dev component` command.
-
-**Creating components that work in Lightning Dev mode requires special considerations:**
-
-- **Avoid External Asset References**: Don't reference Salesforce standard assets like `/assets/icons/standard-sprite/svg/symbols.svg` as they're not available in local dev mode.
-
-- **Keep Component Structure Simple**: Focus on core functionality. Complex Lightning base components often have dependencies that aren't resolved locally.
-
-- **Handle Port Conflicts**: If port 3000 is in use, kill existing processes with `lsof -ti:3000 | xargs kill -9` before starting dev mode.
-
-### 6. Previewing the App
+### 5. Previewing the App
 
 - If the user asks to preview the app or run it in local dev mode, run this terminal command:
 
@@ -96,7 +76,7 @@ You **must** deploy the metadata before running the `sf lightning dev component`
 
 ---
 
-### 7. Resetting the environment
+### 6. Resetting the environment
 
 - When the user asks you to reset the demo, run this terminal command:
   `./bin/demo-reset.sh`

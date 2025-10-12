@@ -111,7 +111,6 @@ The Apex controller should be implemented with these specifications:
 
 4. **Best Practices**:
    - Implement proper error handling with try/catch blocks
-   - Use Database operations with partial success handling
    - Throw AuraHandledException for user-friendly error messages
    - Aggregate multiple database errors into single exception messages
    - Do NOT use hardcoded IDs
@@ -136,8 +135,6 @@ The LWC component should be implemented with these specifications:
    - Import all necessary modules: `track`, `wire`, `ShowToastEvent`, `refreshApex`
 
 3. **Component Architecture**:
-   - Use `@track` decorator for reactive properties that need to trigger re-renders
-   - Implement comprehensive state management for loading states and form data
    - Use appropriate Lightning components for displaying todos
    - Implement proper data handling and user interactions
    - Use appropriate input components for form fields
@@ -168,36 +165,13 @@ The LWC component should be implemented with these specifications:
    - Use proper exception handling patterns
 
 2. **LWC Development**:
-   - Import necessary modules (wire, track, refreshApex, ShowToastEvent, etc.)
+   - Import necessary modules (wire, refreshApex, ShowToastEvent, etc.)
    - Structure component with clear separation of concerns and proper state management
    - Use modern JavaScript ES6+ features including destructuring and arrow functions
    - Follow LWC best practices for event handling and data management
    - Implement proper lifecycle management and error handling
    - Implement comprehensive form validation and user feedback mechanisms
    - Implement responsive design with SLDS grid system and utility classes
-
-## Deployment Process
-
-When ready to deploy:
-
-1. Use the Salesforce MCP deploy tool with these parameters:
-   - `sourceDir`: ["force-app/main/default/objects", "force-app/main/default/classes", "force-app/main/default/lwc"]
-   - `usernameOrAlias`: Target org alias
-   - `directory`: Current project directory
-
-2. The deployment will include:
-   - Updated TodoController.cls with new functionality
-   - Updated todoManager LWC with complete implementation
-   - All existing metadata files (no changes needed)
-
-## Testing and Preview
-
-After deployment:
-
-1. Assign the Todo_Manager_Full_Access permission set to test users
-2. Access the Todo Manager app through the App Launcher
-3. Test CRUD operations through the todoManager component
-4. Verify sorting, filtering, and status update functionality
 
 ## Integration Points
 
@@ -212,6 +186,5 @@ After deployment:
 3. **Data Model**:
    - The Todo\_\_c object supports all standard Salesforce features (reports, workflows, etc.)
    - Custom fields are properly configured for UI interaction
-
 
 This document provides all the necessary context for an AI agent to implement the TodoController.cls Apex class and the todoManager Lightning Web Component without requiring access to each individual file in the project.

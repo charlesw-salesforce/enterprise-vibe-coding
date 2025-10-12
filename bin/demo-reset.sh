@@ -188,12 +188,6 @@ sf project deploy start --target-org $next_org --ignore-conflicts
 print_status "Assigning Todo Manager app permission set to user"
 sf org assign permset --name "$PERMISSION_SET" --target-org "$next_org" 2>&1 | grep -v "was already assigned" || true
 
-# Install sf lightning dev plugin
-sf plugins install @salesforce/plugin-lightning-dev@prerelease
-
-# Kill any instances of component Local Dev
-lsof -ti :3000 | xargs kill -9 2>/dev/null && echo "Killed Local Dev process on port 3000" || echo "No Local Dev process on port 3000"
-
 # Success message
 echo ""
 if [ "$use_fallback" = true ]; then

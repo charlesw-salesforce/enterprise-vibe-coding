@@ -1,8 +1,7 @@
 {
-  "orgName": "charles.watkins company",
+  "orgName": "scratchorgfarm",
   "edition": "Developer",
   "features": ["EnableSetPasswordInApi"],
-  "release": "preview",
   "settings": {
     "lightningExperienceSettings": {
       "enableS1DesktopEnabled": true,
