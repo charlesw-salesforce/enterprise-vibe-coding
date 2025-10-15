@@ -1,6 +1,8 @@
 # Todo App Project Documentation
 
-This document provides comprehensive information about the Todo app project structure and requirements. It's designed to give an AI agent sufficient context to build the application without needing to read each individual file in the project.
+This document provides comprehensive information about the Todo app project structure and requirements. It's designed to give an AI agent sufficient context to build the application without needing to read each individual file in the project. 
+
+The only file you should reach are the Todo__c object metadata and custom fields.
 
 ## Project Overview
 
